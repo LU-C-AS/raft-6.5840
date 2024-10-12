@@ -8,12 +8,14 @@ package raft
 // test with the original before submitting.
 //
 
-import "testing"
-import "fmt"
-import "time"
-import "math/rand"
-import "sync/atomic"
-import "sync"
+import (
+	"fmt"
+	"math/rand"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+)
 
 // The tester generously allows solutions to complete elections in one second
 // (much more than the paper's range of timeouts).
@@ -137,6 +139,7 @@ func TestBasicAgree2B(t *testing.T) {
 			t.Fatalf("some have committed before Start()")
 		}
 
+		// fmt.Printf("index %d\n", index)
 		xindex := cfg.one(index*100, servers, false)
 		if xindex != index {
 			t.Fatalf("got index %v but expected %v", xindex, index)
@@ -706,7 +709,6 @@ func TestPersist12C(t *testing.T) {
 	cfg.connect(leader2)
 
 	cfg.wait(4, servers, -1) // wait for leader2 to join before killing i3
-
 	i3 := (cfg.checkOneLeader() + 1) % servers
 	cfg.disconnect(i3)
 	cfg.one(15, servers-1, true)
@@ -909,6 +911,7 @@ func TestFigure8Unreliable2C(t *testing.T) {
 			}
 		}
 
+		// fmt.Printf("%d l:%d\n", iters, leader)
 		if (rand.Int() % 1000) < 100 {
 			ms := rand.Int63() % (int64(RaftElectionTimeout/time.Millisecond) / 2)
 			time.Sleep(time.Duration(ms) * time.Millisecond)
@@ -920,6 +923,7 @@ func TestFigure8Unreliable2C(t *testing.T) {
 		if leader != -1 && (rand.Int()%1000) < int(RaftElectionTimeout/time.Millisecond)/2 {
 			cfg.disconnect(leader)
 			nup -= 1
+			// fmt.Printf("\tdis leader:%d %d\n", leader, nup)
 		}
 
 		if nup < 3 {
@@ -927,6 +931,7 @@ func TestFigure8Unreliable2C(t *testing.T) {
 			if cfg.connected[s] == false {
 				cfg.connect(s)
 				nup += 1
+				// fmt.Printf("con %d\n", s)
 			}
 		}
 	}
@@ -937,13 +942,13 @@ func TestFigure8Unreliable2C(t *testing.T) {
 		}
 	}
 
+	fmt.Printf("\tone\n")
 	cfg.one(rand.Int()%10000, servers, true)
 
 	cfg.end()
 }
 
 func internalChurn(t *testing.T, unreliable bool) {
-
 	servers := 5
 	cfg := make_config(t, servers, unreliable, false)
 	defer cfg.cleanup()
@@ -1014,6 +1019,7 @@ func internalChurn(t *testing.T, unreliable bool) {
 		if (rand.Int() % 1000) < 200 {
 			i := rand.Int() % servers
 			cfg.disconnect(i)
+			fmt.Printf("\ndisconn %d\n", i)
 		}
 
 		if (rand.Int() % 1000) < 500 {
@@ -1022,12 +1028,15 @@ func internalChurn(t *testing.T, unreliable bool) {
 				cfg.start1(i, cfg.applier)
 			}
 			cfg.connect(i)
+			fmt.Printf("\nconn %d\n", i)
 		}
 
 		if (rand.Int() % 1000) < 200 {
 			i := rand.Int() % servers
 			if cfg.rafts[i] != nil {
 				cfg.crash1(i)
+
+				fmt.Printf("\ncrash %d\n", i)
 			}
 		}
 
@@ -1045,6 +1054,7 @@ func internalChurn(t *testing.T, unreliable bool) {
 			cfg.start1(i, cfg.applier)
 		}
 		cfg.connect(i)
+		fmt.Printf("\nconn %d\n", i)
 	}
 
 	atomic.StoreInt32(&stop, 1)
